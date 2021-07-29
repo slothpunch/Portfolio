@@ -52,49 +52,28 @@ COMMIT;
 ALTER TABLE nashville_housing
 ADD COLUMN TNOwnerAddress TEXT AFTER PropertyAddress;
 
-SELECT * FROM nashville_housing;
-
 ALTER TABLE nashville_housing
 DROP COLUMN TNOwnerAddress;
 
 ALTER TABLE nashville_housing
-DROP COLUMN MyUnknownColumn;
+ADD COLUMN NewPropertyAddress TEXT AFTER PropertyAddress;
 
 SELECT * FROM nashville_housing;
+
+ALTER TABLE nashville_housing
+ADD COLUMN NewParcelID TEXT AFTER NewPropertyAddress;
+
+UPDATE nashville_housing
+SET NewParcelID = ParcelID;
+
+DELETE FROM nashville_housing WHERE UniqueID IS NULL;
+
+UPDATE nashville_housing
+SET NewPropertyAddress = PropertyAddress;
 
 UPDATE nashville_housing
 SET TNOwnerAddress = REPLACE(OwnerAddress, ', TN', '');
 
-
-SELECT 
-	a.ParcelID,
-    a.PropertyAddress,
-    b.ParcelID,
-    b.PropertyAddress
-FROM nashville_housing a
-JOIN nashville_housing b 
-	ON a.ParcelID = b.ParcelID
-    AND a.UniqueID <> b.UniqueID
-WHERE a.PropertyAddress IS NULL;
-
-SELECT 
-	a.UniqueID,
-	a.ParcelID,
-    a.PropertyAddress,
-    b.UniqueID,
-    b.ParcelID,
-    b.PropertyAddress
-FROM nashville_housing a
-JOIN nashville_housing b 
-	ON a.ParcelID = b.ParcelID
-    AND a.UniqueID <> b.UniqueID
-WHERE a.PropertyAddress IS NULL
-ORDER BY a.UniqueID;
-
-SELECT *
-FROM nashville_housing
-WHERE PropertyAddress IS NULL
-ORDER BY UniqueID;
 
 SELECT 
 	a.ParcelID,
@@ -107,12 +86,99 @@ JOIN nashville_housing b
 WHERE a.PropertyAddress IS NULL;
 -- WHERE PropertyAddress = REPLACE(OwnerAddress, ', TN', '');
 
+
+SELECT 
+	a.UniqueID,
+	a.ParcelID,
+--     a.PropertyAddress,
+    a.TNOwnerAddress,
+    b.UniqueID,
+    b.ParcelID,
+    b.PropertyAddress,
+    IFNULL(a.PropertyAddress, b.PropertyAddress)
+FROM nashville_housing a
+JOIN nashville_housing b 
+	ON a.ParcelID = b.ParcelID
+    AND a.UniqueID <> b.UniqueID
+WHERE a.PropertyAddress IS NULL
+ORDER BY a.UniqueID;
+
+SELECT 
+	a.UniqueID,
+	a.ParcelID,
+    a.PropertyAddress,
+    b.PropertyAddress,
+    IFNULL(a.PropertyAddress, b.PropertyAddress)
+FROM nashville_housing a, nashville_housing b
+WHERE a.ParcelID = b.ParcelID
+    AND a.UniqueID <> b.UniqueID
+	AND a.PropertyAddress IS NULL
+ORDER BY a.UniqueID;
+
+SELECT 
+	UniqueID,
+	ParcelID,
+    PropertyAddress,
+    TNOwnerAddress,
+    IFNULL(PropertyAddress, TNOwnerAddress)
+FROM nashville_housing a
+WHERE ParcelID = ParcelID
+AND PropertyAddress IS NULL
+    -- AND UniqueID <> UniqueID
+	-- AND a.PropertyAddress IS NULL
+ORDER BY UniqueID;
+
+
+UPDATE nashville_housing A
+        INNER JOIN
+    nashville_housing B ON A.ParcelID = B.ParcelID 
+SET 
+    A.PropertyAddress = B.PropertyAddress
+WHERE
+    A.UniqueID <> B.UniqueID
+        AND A.PropertyAddress IS NULL;
+
+
+SHOW OPEN TABLES WHERE in_use>0; 
+SHOW PROCESSLIST;
+KILL 30;
+
 --------------------------------------------------------------------------------------------------------------------------
 
 -- Breaking out Address into Individual Columns (Address, City, State)
+-- 		1808 FOX CHASE DR, GOODLETTSVILLE
+-- 		Address     		 City 			 
+-- 		1808 FOX CHASE DR	 GOODLETTSVILLE
+--
 
+SELECT *
+FROM nashville_housing;
 
+SELECT 
+-- 	PropertyAddress,
+    SUBSTR(PropertyAddress, 1, LOCATE(',', PropertyAddress, 1)-1) AS Address,
+    SUBSTR(PropertyAddress, LOCATE(',', PropertyAddress)+1),
+    SUBSTR(PropertyAddress, POSITION(',' IN PropertyAddress)+1)
+FROM
+    nashville_housing;
 
+COMMIT;
+
+ALTER TABLE nashville_housing
+ADD COLUMN PropertySplitAddress TEXT;
+
+ALTER TABLE nashville_housing
+ADD COLUMN PropertySplitCity TEXT;
+
+SELECT * FROM nashville_housing;
+
+COMMIT;
+
+UPDATE nashville_housing
+SET PropertySplitAddress = SUBSTR(PropertyAddress, 1, LOCATE(',', PropertyAddress, 1)-1);
+
+UPDATE nashville_housing
+SET PropertySplitCity = SUBSTR(PropertyAddress, LOCATE(',', PropertyAddress)+1);
 
 
 --------------------------------------------------------------------------------------------------------------------------
