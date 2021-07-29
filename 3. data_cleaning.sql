@@ -180,16 +180,68 @@ SET PropertySplitAddress = SUBSTR(PropertyAddress, 1, LOCATE(',', PropertyAddres
 UPDATE nashville_housing
 SET PropertySplitCity = SUBSTR(PropertyAddress, LOCATE(',', PropertyAddress)+1);
 
+-- OwnerAddress
+
+SELECT OwnerAddress
+FROM nashville_housing;
+
+SELECT 
+	SUBSTRING_INDEX(OwnerAddress, ',', 1) AS Address,
+    REPLACE(REPLACE(SUBSTRING_INDEX(OwnerAddress, ',', 2), SUBSTRING_INDEX(OwnerAddress, ',', 1), ''), ', ', '') AS City,
+    REPLACE(SUBSTRING_INDEX(OwnerAddress, ',', -1), ' ', '') AS State
+FROM nashville_housing;
+
+-- Create columns 
+
+ALTER TABLE nashville_housing
+ADD COLUMN OwnerSplitAddress VARCHAR(255);
+
+ALTER TABLE nashville_housing
+ADD COLUMN OwnerSplitCity VARCHAR(255);
+
+ALTER TABLE nashville_housing
+ADD COLUMN OwnerSplitState VARCHAR(255);
+
+COMMIT;
+
+UPDATE nashville_housing
+SET OwnerSplitAddress = SUBSTRING_INDEX(OwnerAddress, ',', 1);
+
+UPDATE nashville_housing
+SET OwnerSplitCity = REPLACE(REPLACE(SUBSTRING_INDEX(OwnerAddress, ',', 2), SUBSTRING_INDEX(OwnerAddress, ',', 1), ''), ', ', '');
+
+UPDATE nashville_housing
+SET OwnerSplitState = REPLACE(SUBSTRING_INDEX(OwnerAddress, ',', -1), ' ', '');
+
+
+SELECT * FROM nashville_housing;
+
+SELECT 
+	OwnerAddress,
+    OwnerSplitAddress,
+    OwnerSplitCity,
+    OwnerSplitState
+FROM nashville_housing;
+
 
 --------------------------------------------------------------------------------------------------------------------------
 
 
 -- Change Y and N to Yes and No in "Sold as Vacant" field
 
+SELECT SoldAsVacant
+FROM nashville_housing;
 
+SELECT SoldAsVacant
+FROM nashville_housing
+WHERE SoldAsVacant IN ('N','Y');
 
+COMMIT;
 
+UPDATE nashville_housing
+SET SoldAsVacant = SoldAsVacant IN ('N','Y');
 
+ROLLBACK;
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 
