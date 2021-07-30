@@ -115,18 +115,6 @@ WHERE a.ParcelID = b.ParcelID
 	AND a.PropertyAddress IS NULL
 ORDER BY a.UniqueID;
 
-SELECT 
-	UniqueID,
-	ParcelID,
-    PropertyAddress,
-    TNOwnerAddress,
-    IFNULL(PropertyAddress, TNOwnerAddress)
-FROM nashville_housing a
-WHERE ParcelID = ParcelID
-AND PropertyAddress IS NULL
-    -- AND UniqueID <> UniqueID
-	-- AND a.PropertyAddress IS NULL
-ORDER BY UniqueID;
 
 
 UPDATE nashville_housing A
@@ -236,22 +224,132 @@ SELECT SoldAsVacant
 FROM nashville_housing
 WHERE SoldAsVacant IN ('N','Y');
 
+SELECT 
+	DISTINCT(SoldAsVacant), 
+    COUNT(SoldAsVacant)
+FROM 
+	nashville_housing
+GROUP BY SoldAsVacant;
+
+SELECT SoldAsVacant, 
+CASE
+	WHEN SoldAsVacant = 'N' THEN 'No'
+    WHEN SoldAsVacant = 'Y' THEN 'Yes'
+    ELSE SoldAsVacant
+END
+FROM nashville_housing
+WHERE SoldAsVacant IN ('N','Y');
+
 COMMIT;
+ROLLBACK;
 
 UPDATE nashville_housing
-SET SoldAsVacant = SoldAsVacant IN ('N','Y');
+SET SoldAsVacant = CASE
+	WHEN SoldAsVacant = 'N' THEN 'No'
+    WHEN SoldAsVacant = 'Y' THEN 'Yes'
+    ELSE SoldAsVacant
+END;
 
-ROLLBACK;
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Remove Duplicates
 
+SELECT ParcelID, COUNT(ParcelID), PropertyAddress, SaleDate, SalePrice, LegalReference
+FROM nashville_housing
+GROUP BY ParcelID
+HAVING COUNT(ParcelID) > 1
+ORDER BY COUNT(ParcelID) DESC;
+
+SELECT *, 
+	ROW_NUMBER() OVER(
+    PARTITION BY ParcelID, 
+				PropertyAddress, 
+                SaleDate, 
+                SalePrice, 
+                LegalReference 
+                ORDER BY ParcelID) row_num
+FROM nashville_housing;
+
+SELECT *
+FROM nashville_housing
+WHERE ParcelID = '081 02 0 144.00';
+
+-- Create a CTE
+WITH rownumcte AS(
+SELECT *, ROW_NUMBER() OVER(
+    PARTITION BY ParcelID, 
+				PropertyAddress, 
+                SaleDate, 
+                SalePrice, 
+                LegalReference 
+                ORDER BY ParcelID) row_num
+FROM nashville_housing
+) SELECT *
+FROM rownumcte
+WHERE row_num > 1
+ORDER BY ParcelID;
+
+COMMIT;
+
+ALTER TABLE nashville_housing
+ADD COLUMN row_num NUMERIC;
+
+SELECT * FROM nashville_housing;
+
+COMMIT;
+
+WITH rownumcte AS(
+SELECT UniqueID, ROW_NUMBER() OVER(
+    PARTITION BY ParcelID, 
+				PropertyAddress, 
+                SaleDate, 
+                SalePrice, 
+                LegalReference 
+                ORDER BY ParcelID) rownum
+FROM nashville_housing
+) UPDATE nashville_housing a
+INNER JOIN rownumcte b
+ON a.UniqueID = b.UniqueID
+SET a.row_num = b.rownum;
+
+ROLLBACK;
+-- Delete the duplicates ------ NOT WOKRING
+
+WITH rownumcte AS(
+SELECT *, ROW_NUMBER() OVER(
+    PARTITION BY ParcelID, 
+				PropertyAddress, 
+                SaleDate, 
+                SalePrice, 
+                LegalReference 
+                ORDER BY ParcelID) row_num
+FROM nashville_housing
+) DELETE FROM rownumcte
+WHERE row_num > 1;
 
 
+COMMIT;
+
+ROLLBACK;
+
+WITH rownumcte AS(
+SELECT *, ROW_NUMBER() OVER(
+    PARTITION BY ParcelID, 
+				PropertyAddress, 
+                SaleDate, 
+                SalePrice, 
+                LegalReference 
+                ORDER BY ParcelID) row_num
+FROM nashville_housing
+) DELETE nashville_housing
+FROM nashville_housing
+INNER JOIN rownumcte
+ON nashville_housing.ParcelID = rownumcte.ParcelID
+WHERE row_num > 1; 
 
 
-
+SELECT COUNT(*) FROM nashville_housing; -- 56477
 
 ---------------------------------------------------------------------------------------------------------
 
