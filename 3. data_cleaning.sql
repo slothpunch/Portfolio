@@ -31,78 +31,6 @@ COMMIT;
 SELECT COUNT(*)
 FROM nashville_housing;
 
-SELECT ParcelID, PropertyAddress, TNOwnerAddress
-FROM nashville_housing
-WHERE PropertyAddress != TNOwnerAddress; -- 5075
--- WHERE PropertyAddress IS NULL; -- 29
--- WHERE PropertyAddress = TNOwnerAddress; -- 20922
--- WHERE TNOwnerAddress IS NULL; -- 30462
--- WHERE PropertyAddress != OwnerAddress;
-
-SELECT 
-	ParcelID, 
-	PropertyAddress, 
-    REPLACE(OwnerAddress, ', TN', '') AS OwnerAddress
-FROM nashville_housing
-WHERE PropertyAddress != REPLACE(OwnerAddress, ', TN', '');
-
-
-COMMIT;
-
-ALTER TABLE nashville_housing
-ADD COLUMN TNOwnerAddress TEXT AFTER PropertyAddress;
-
-ALTER TABLE nashville_housing
-DROP COLUMN TNOwnerAddress;
-
-ALTER TABLE nashville_housing
-ADD COLUMN NewPropertyAddress TEXT AFTER PropertyAddress;
-
-SELECT * FROM nashville_housing;
-
-ALTER TABLE nashville_housing
-ADD COLUMN NewParcelID TEXT AFTER NewPropertyAddress;
-
-UPDATE nashville_housing
-SET NewParcelID = ParcelID;
-
-DELETE FROM nashville_housing WHERE UniqueID IS NULL;
-
-UPDATE nashville_housing
-SET NewPropertyAddress = PropertyAddress;
-
-UPDATE nashville_housing
-SET TNOwnerAddress = REPLACE(OwnerAddress, ', TN', '');
-
-
-SELECT 
-	a.ParcelID,
-	a.PropertyAddress,
-    REPLACE(a.OwnerAddress, ', TN', '') AS OwnerAddress
-FROM nashville_housing a
-JOIN nashville_housing b
-	ON a.ParcelID = b.ParcelID
-    AND a.UniqueID <> b.UniqueID
-WHERE a.PropertyAddress IS NULL;
--- WHERE PropertyAddress = REPLACE(OwnerAddress, ', TN', '');
-
-
-SELECT 
-	a.UniqueID,
-	a.ParcelID,
---     a.PropertyAddress,
-    a.TNOwnerAddress,
-    b.UniqueID,
-    b.ParcelID,
-    b.PropertyAddress,
-    IFNULL(a.PropertyAddress, b.PropertyAddress)
-FROM nashville_housing a
-JOIN nashville_housing b 
-	ON a.ParcelID = b.ParcelID
-    AND a.UniqueID <> b.UniqueID
-WHERE a.PropertyAddress IS NULL
-ORDER BY a.UniqueID;
-
 SELECT 
 	a.UniqueID,
 	a.ParcelID,
@@ -115,8 +43,6 @@ WHERE a.ParcelID = b.ParcelID
 	AND a.PropertyAddress IS NULL
 ORDER BY a.UniqueID;
 
-
-
 UPDATE nashville_housing A
         INNER JOIN
     nashville_housing B ON A.ParcelID = B.ParcelID 
@@ -125,11 +51,6 @@ SET
 WHERE
     A.UniqueID <> B.UniqueID
         AND A.PropertyAddress IS NULL;
-
-
-SHOW OPEN TABLES WHERE in_use>0; 
-SHOW PROCESSLIST;
-KILL 30;
 
 --------------------------------------------------------------------------------------------------------------------------
 
@@ -153,10 +74,10 @@ FROM
 COMMIT;
 
 ALTER TABLE nashville_housing
-ADD COLUMN PropertySplitAddress TEXT;
+ADD COLUMN PropertySplitAddress VARCHAR(255);
 
 ALTER TABLE nashville_housing
-ADD COLUMN PropertySplitCity TEXT;
+ADD COLUMN PropertySplitCity VARCHAR(255);
 
 SELECT * FROM nashville_housing;
 
@@ -214,15 +135,10 @@ FROM nashville_housing;
 
 --------------------------------------------------------------------------------------------------------------------------
 
-
 -- Change Y and N to Yes and No in "Sold as Vacant" field
 
 SELECT SoldAsVacant
 FROM nashville_housing;
-
-SELECT SoldAsVacant
-FROM nashville_housing
-WHERE SoldAsVacant IN ('N','Y');
 
 SELECT 
 	DISTINCT(SoldAsVacant), 
@@ -313,6 +229,18 @@ INNER JOIN rownumcte b
 ON a.UniqueID = b.UniqueID
 SET a.row_num = b.rownum;
 
+SELECT 
+    *
+FROM
+    nashville_housing
+WHERE
+    row_num > 1;
+
+COMMIT;
+
+DELETE FROM nashville_housing
+WHERE row_num > 1;
+
 ROLLBACK;
 -- Delete the duplicates ------ NOT WOKRING
 
@@ -326,7 +254,7 @@ SELECT *, ROW_NUMBER() OVER(
                 ORDER BY ParcelID) row_num
 FROM nashville_housing
 ) DELETE FROM rownumcte
-WHERE row_num > 1;
+WHERE rownumcte.row_num > 1;
 
 
 COMMIT;
@@ -346,7 +274,7 @@ FROM nashville_housing
 FROM nashville_housing
 INNER JOIN rownumcte
 ON nashville_housing.ParcelID = rownumcte.ParcelID
-WHERE row_num > 1; 
+WHERE row_num > 1; -- 233 
 
 
 SELECT COUNT(*) FROM nashville_housing; -- 56477
@@ -355,7 +283,8 @@ SELECT COUNT(*) FROM nashville_housing; -- 56477
 
 -- Delete Unused Columns
 
-
+SELECT *
+FROM nashville_housing;
 
 
 
