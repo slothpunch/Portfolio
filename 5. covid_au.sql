@@ -83,7 +83,7 @@ RENAME COLUMN new_date TO date;
 
 COMMIT;
 
--- How many people are tested everyday
+-- new_tests and total_tests
 SELECT 
     date,
     new_tests,
@@ -114,8 +114,99 @@ WHERE location = 'Australia' AND date = '2020-04-05';
 ROLLBACK;
 
 
--- vaccinated
+-- How many people are tested everyday
 
-    
-    
+-- Vaccinated rate
+SELECT 
+	date,
+    population,
+    new_vaccinations,
+    total_vaccinations,
+    people_fully_vaccinated
+--     (people_fully_vaccinated/total_vaccinations) * 100 AS fully_vaccianted,
+--     (total_vaccinations/population) * 100 AS vaccinated_population
+FROM
+    covid_vaccinations
+WHERE
+    location = 'Australia'
+--         AND total_vaccinations > 1
+ORDER BY date;
+
+
+
+
+
+
+
+-- Create TMEP
+
+DROP TABLE IF EXISTS VaccinationStatus;
+CREATE TEMPORARY TABLE VaccinationStatus
+(
+	date DATE,
+    population INT,
+    new_vaccinations INT,
+    total_vaccinations INT,
+    people_vaccinated INT,
+    people_fully_vaccinated INT
+);
+
+INSERT INTO VaccinationStatus
+SELECT 
+	date,
+    population,
+    new_vaccinations,
+    total_vaccinations,
+    people_vaccinated,
+    people_fully_vaccinated
+--     (people_fully_vaccinated/total_vaccinations) * 100 AS fully_vaccianted,
+--     (total_vaccinations/population) * 100 AS vaccinated_population
+FROM
+    covid_vaccinations
+WHERE
+    location = 'Australia'
+--         AND total_vaccinations > 1
+ORDER BY date;
+
+SELECT 
+	*
+FROM VaccinationStatus;
+
+DELETE FROM VaccinationStatus
+WHERE date IN ('2021-06-19', '2021-06-20', '2021-06-21', '2021-06-26', '2021-06-27', '2021-06-28', '2021-07-01');
+
+DELETE FROM VaccinationStatus
+WHERE date = '2021-08-02';
+
+UPDATE VaccinationStatus
+SET new_vaccinations = 358718
+WHERE date = '2021-06-22';
+
+UPDATE VaccinationStatus
+SET new_vaccinations = 363068
+WHERE date = '2021-06-29';
+
+UPDATE VaccinationStatus
+SET new_vaccinations = 324568
+WHERE date = '2021-07-02';
+
+SELECT 
+	date,
+    population,
+	new_vaccinations,
+    total_vaccinations,
+    (total_vaccinations/population) * 100 AS total_vaccinated_rate,
+    people_fully_vaccinated,
+    (people_fully_vaccinated/population) * 100 AS fully_vaccinated_rate
+FROM 
+	VaccinationStatus
+ORDER BY date DESC;
+
+
+
+
+
+
+
+
     
