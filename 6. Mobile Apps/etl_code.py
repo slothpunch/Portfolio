@@ -26,9 +26,8 @@ load_dotenv(find_dotenv())
 
 password = os.environ.get('MONGODB_PW')
 
+# Cloud
 connection_string = f'mongodb+srv://admin:{password}@portfolio.7rxzcna.mongodb.net/'
-# connection_string = f'mongodb+srv://admin:admin@portfolio.7rxzcna.mongodb.net/'
-
 client = MongoClient(connection_string)
 
 # Korea
@@ -46,6 +45,14 @@ au_apps_collection = au_gps_db['apps']
 au_apps_numeric_collection = au_gps_db['apps_numeric']
 au_reviews_collection = au_gps_db['reviews']
 au_rankings_collection = au_gps_db['rankings']
+
+
+# Local
+local_connection_string = f'mongodb://localhost:27017/'
+local_client = MongoClient(local_connection_string)
+
+lc_au_db = local_client['au_google_play_store']
+lc_kr_db = local_client['ko_google_play_store']
 
 
 def collect_ko_app_and_ranking(df):
@@ -108,6 +115,14 @@ def collect_ko_app_and_ranking(df):
         )
     except: 
         print('ko_rankings_collection error')
+        
+    # Insert into Local MongoDB
+    try:
+        lc_kr_db['kr_rankings'].insert_many(
+            ko_app_ranking_json_parsed[:]
+        )
+    except: 
+        print('Local ko_rankings_collection error')
             
     
     ###############
@@ -191,6 +206,14 @@ def collect_ko_app_and_ranking(df):
         )
     except: 
         print('ko_apps_collection error')
+        
+    # Insert into Local MongoDB
+    try:
+        lc_kr_db['kr_apps'].insert_many(
+            app_cat_df_json_parsed[:]
+        )
+    except: 
+        print('Local ko_apps_collection error')
     
     # Convert app_num_df to JSON format
     app_num_df_json = app_num_df.to_json(orient = 'records')
@@ -203,6 +226,15 @@ def collect_ko_app_and_ranking(df):
         )
     except: 
         print('ko_apps_numeric_collection error')
+    
+    # Insert into Local MongoDB
+    try:
+        lc_kr_db['kr_apps_numeric'].insert_many(
+            app_num_df_json_parsed[:]
+        )
+    except: 
+        print('Local ko_apps_numeric_collection error')
+    
         
     print('End\n\n')
 
@@ -269,6 +301,14 @@ def collect_au_app_and_ranking(df):
     except: 
         print('au_rankings_collection error')
             
+    # Insert into Local MongoDB
+    try:
+        lc_au_db['au_rankings'].insert_many(
+            au_app_ranking_json_parsed[:]
+        )
+    except: 
+        print('Local au_app_ranking_json_parsed error')
+    
     
     ###############
     # App details #
@@ -353,6 +393,14 @@ def collect_au_app_and_ranking(df):
     except: 
         print('au_apps_collection error')
     
+    # Insert into Local MongoDB
+    try:
+        lc_au_db['au_apps'].insert_many(
+            app_cat_df_json_parsed[:]
+        )
+    except: 
+        print('Local app_cat_df_json_parsed error')
+    
     # Convert app_num_df to JSON format
     app_num_df_json = app_num_df.to_json(orient = 'records')
     app_num_df_json_parsed = json.loads(app_num_df_json)
@@ -364,5 +412,15 @@ def collect_au_app_and_ranking(df):
         )
     except: 
         print('au_apps_numeric_collection error')
+    
+    # Insert into Local MongoDB
+    try:
+        lc_au_db['au_apps_numeric'].insert_many(
+            app_num_df_json_parsed[:]
+        )
+    except: 
+        print('Local app_num_df_json_parsed error')
         
     print('End')
+    
+    
